@@ -1,7 +1,7 @@
 <template>
 	<!--<img alt="Vue logo" src="./assets/logo.png">
 	<HelloWorld msg="Hello World!"/>-->
-	<div id="authorized" v-if="userLogged">
+	<div id="authorized" v-if="showAuthorized">
 		<div id="leftBar">
 			<router-link to="/">Home</router-link><br>
 			<router-link to="/account">Account</router-link><br>
@@ -19,7 +19,7 @@
 			<router-view />
 		</div>
 	</div>
-	<div id="login" v-else>
+	<div id="login" v-if="showLogin">
 		<h1>Login first!</h1>
 		<div class="form-group col-md-6">
 			<label for="email">Email:</label>
@@ -29,7 +29,7 @@
 			<label for="password">Password:</label>
 			<input class="form-control" type="password" id="password" v-model="loginPassword" maxlength="100" required>
 		</div>
-		<button class="btn btn-primary" id="loginButton" @click="getToken">Login</button>
+		<button class="btn btn-primary" id="loginButton" @click="loginButtonOnClick">Login</button>
 	</div>
 </template>
 
@@ -38,28 +38,43 @@ import { Options, Vue } from "vue-class-component";
 import HelloWorld from "./components/HelloWorld.vue";
 import APIFetcher from './components/APIFetcher';
 
+import authorizer from './authorization/Authorizer';
+
 @Options({
 	components: {
 		HelloWorld,
 	},
 })
 
-
 export default class App extends Vue
 {
 	loginEmail = '';
 	loginPassword = '';
-	userLogged = false;
+	showAuthorized = false;
+	showLogin = false;
 
 	created()
     {
-		setInterval(this.checkLoginStatus, 1000);
+		authorizer.addAccessChangedCallback(this.accessChanged.bind(this));
+		authorizer.start();
 	}
 
-	checkLoginStatus()
+	async loginButtonOnClick()
 	{
-		this.userLogged = localStorage.getItem('login') != null;
-		return this.userLogged;
+		let result = await authorizer.login(this.loginEmail, this.loginPassword);
+		this.loginEmail = '';
+		this.loginPassword = '';
+
+		if (result.ok)
+			authorizer.start();
+		else
+			window.alert(result.error);
+	}
+
+	accessChanged(access: boolean)
+	{
+		this.showAuthorized = access;
+		this.showLogin = !access;
 	}
 
 	async getLogin()
@@ -77,34 +92,6 @@ export default class App extends Vue
 			localStorage.setItem('login', data.login);
 		else
 			console.log(data.error);
-	}
-	
-	async getToken()
-	{
-		var apiFetcher = new APIFetcher();
-        var data = await apiFetcher.fetchUnauthorized('login/', {
-			headers: { 'Content-Type': 'application/json' },
-			method: 'POST',
-			body: JSON.stringify({
-				email: this.loginEmail,
-				password: this.loginPassword
-			})
-		})
-        .then(response => response.json())
-		.catch(error => {
-			console.log('FETCH ERROR:', error);
-			return;
-		});
-
-		if (data.ok) {
-			localStorage.setItem('token', data.token);
-			this.getLogin();
-		}
-		else {
-			this.loginEmail = '';
-			this.loginPassword = '';
-			window.alert(data.error);
-		}
 	}
 }
 </script>

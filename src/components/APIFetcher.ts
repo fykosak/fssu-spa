@@ -1,17 +1,21 @@
+import authorizer from '../authorization/Authorizer';
+
+// This class is used for calls to the API server. New object should be created for each request.
 export default class APIFetcher
 {
     readonly rootApiUrl = 'http://localhost:3200/';
 
+    // Same as default javascript fetch method, but adds access token to the header. Also sets correct API url.
     fetch(relativeUrl: string, init?: RequestInit | undefined): Promise<Response>
     {
-        const token = localStorage.getItem('token');
+        const token = authorizer.getToken();
         if (token == null)
             throw Error('Token undefined.');
 
         if (init == null)
             init = {};
 
-        var headers: any = (init.headers == null ? {} : init.headers);
+        let headers: any = (init.headers == null ? {} : init.headers);
         headers.Authorization = 'Token ' + token;
 
         init.headers = headers;
@@ -19,10 +23,9 @@ export default class APIFetcher
         return fetch(this.rootApiUrl + relativeUrl, init);
     }
 
+    // Same as default javascript fetch method, but sets correct API url.
     fetchUnauthorized(relativeUrl: string, init?: RequestInit | undefined): Promise<Response>
     {
-        console.log(init);
-
         return fetch(this.rootApiUrl + relativeUrl, init);
     }
 }
