@@ -27,7 +27,7 @@
 		</div>
 		<div class="form-group col-md-6">
 			<label for="password">Password:</label>
-			<input class="form-control" type="password" id="password" v-model="loginPassword" maxlength="100" required>
+			<input class="form-control" type="password" id="password" v-model="loginPassword" maxlength="64" required>
 		</div>
 		<button class="btn btn-primary" id="loginButton" @click="loginButtonOnClick">Login</button>
 	</div>
